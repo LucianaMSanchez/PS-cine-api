@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "30njUEVpqneUxeGXWJOKE8w0GSibkYAI9cv1suG+SqE=",
+  "Source": "cine-api",
+  "BasePath": "_content/cine-api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
