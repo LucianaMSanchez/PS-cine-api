@@ -15,8 +15,9 @@ namespace cine_api.Services
             _movies = DataLoader.LoadMovies();
             _directors = DataLoader.LoadDirectors();
             _functions = LoadFunctions();
-            if (_functions.Any())
+            if (_functions.Count() != 0)
                 _nextFunctionId = _functions.Max(f => f.Id) + 1;
+
         }
 
         public bool AddFunction(string movieName, string directorName, DateTime date, TimeSpan time, decimal price)
@@ -29,8 +30,13 @@ namespace cine_api.Services
                 Console.WriteLine("Movie or director not found.");
                 return false;
             }
-
-            if (!_movies.Any(m => m.Name == movieName && _directors.Any(d => d.Name == directorName)))
+            if (!_movies.Any(m => m.Name.Equals(movieName, StringComparison.OrdinalIgnoreCase)) ||
+                !_directors.Any(d => d.Name.Equals(directorName, StringComparison.OrdinalIgnoreCase)))
+            {
+                Console.WriteLine("Movie or director not found.");
+                return false;
+            }
+            if (!string.Equals(movie.Director.Name, directorName, StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine("The entered director did not direct the selected movie.");
                 return false;
@@ -64,14 +70,40 @@ namespace cine_api.Services
             return true;
         }
 
-        public bool UpdateFunction(int id, decimal newPrice)
+        public bool UpdateFunction(FunctionDto function)
         {
-            var function = _functions.FirstOrDefault(f => f.Id == id);
-            if (function == null)
+            var existingFunction = _functions.FirstOrDefault(f => f.Id == function.Id);
+            if (existingFunction == null)
             {
                 return false;
             }
-            function.Price = newPrice;
+
+            var movie = _movies.FirstOrDefault(m => m.Name.Equals(function.MovieName, StringComparison.OrdinalIgnoreCase));
+            var director = _directors.FirstOrDefault(d => d.Name.Equals(function.DirectorName, StringComparison.OrdinalIgnoreCase));
+
+            if (movie == null || director == null)
+            {
+                Console.WriteLine("Movie or director not found.");
+                return false;
+            }
+            if (!_movies.Any(m => m.Name.Equals(function.MovieName, StringComparison.OrdinalIgnoreCase)) ||
+                !_directors.Any(d => d.Name.Equals(function.DirectorName, StringComparison.OrdinalIgnoreCase)))
+            {
+                Console.WriteLine("Movie or director not found.");
+                return false;
+            }
+            if (!string.Equals(movie.Director.Name, function.DirectorName, StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("The entered director did not direct the selected movie.");
+                return false;
+            }
+
+            existingFunction.MovieName = function.MovieName;
+            existingFunction.DirectorName = function.DirectorName;
+            existingFunction.Date = function.Date;
+            existingFunction.Time = function.Time;
+            existingFunction.Price = function.Price;
+
             SaveFunctions();
             return true;
         }
@@ -92,6 +124,12 @@ namespace cine_api.Services
         {
             return _functions;
         }
+
+        public FunctionDto? GetFunctionById(int id)
+        {
+            return _functions.FirstOrDefault(f => f.Id == id);
+        }
+
 
         private void SaveFunctions()
         {

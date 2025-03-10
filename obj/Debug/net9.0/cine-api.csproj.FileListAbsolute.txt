@@ -26,3 +26,4 @@ C:\Repositorios\Cine\cine-api\obj\Debug\net9.0\refint\cine-api.dll
 C:\Repositorios\Cine\cine-api\obj\Debug\net9.0\cine-api.pdb
 C:\Repositorios\Cine\cine-api\obj\Debug\net9.0\cine-api.genruntimeconfig.cache
 C:\Repositorios\Cine\cine-api\obj\Debug\net9.0\ref\cine-api.dll
+C:\Repositorios\Cine\cine-api\obj\Debug\net9.0\cine-api.sourcelink.json

@@ -1,10 +1,10 @@
-using cine_api.Endpoints;
+using cine_api.Services;
 
 class Program
 {
     static void Main()
     {
-        FunctionsEndpoints functionsEndpoints = new FunctionsEndpoints();
-        functionsEndpoints.ShowMenu();
+        FunctionsService functionsService = new FunctionsService();
+        functionsService.ShowMenu();
     }
 }
