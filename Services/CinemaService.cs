@@ -1,4 +1,5 @@
 using cine_api.DTOs;
+using cine_api.Const;
 
 namespace cine_api.Services
 {
@@ -50,7 +51,7 @@ namespace cine_api.Services
             }
 
             int movieFunctionsCount = _functions.Count(f => f.MovieName == movieName);
-            if (movie.Country != "Argentina" && movieFunctionsCount >= 8)
+            if (movie.Country != CountryCode.Argentina && movieFunctionsCount >= 8)
             {
                 Console.WriteLine("The international movie has reached its function limit.");
                 return false;
