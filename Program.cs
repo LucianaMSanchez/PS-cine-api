@@ -4,7 +4,7 @@ class Program
 {
     static void Main()
     {
-        FunctionsService functionsService = new FunctionsService();
-        functionsService.ShowMenu();
+        CinemaService cinemaService = new CinemaService();
+        cinemaService.ShowMenu();
     }
 }

@@ -1,174 +1,201 @@
-using cine_api.DTOs;
-using cine_api.Const;
-
 namespace cine_api.Services
 {
     public class CinemaService
     {
-        private readonly List<MovieDto> _movies;
-        private readonly List<DirectorDto> _directors;
-        private readonly List<FunctionDto> _functions;
-        private const string FunctionsFilePath = "Data/functions.txt";
-        private int _nextFunctionId = 1;
+        private readonly FunctionsService _functionsService;
 
         public CinemaService()
         {
-            _movies = DataLoader.LoadMovies();
-            _directors = DataLoader.LoadDirectors();
-            _functions = LoadFunctions();
-            if (_functions.Count() != 0)
-                _nextFunctionId = _functions.Max(f => f.Id) + 1;
-
+            _functionsService = new FunctionsService();
         }
 
-        public bool AddFunction(string movieName, string directorName, DateTime date, TimeSpan time, decimal price)
+        public void ShowMenu()
         {
-            var movie = _movies.FirstOrDefault(m => m.Name.Equals(movieName, StringComparison.OrdinalIgnoreCase));
-            var director = _directors.FirstOrDefault(d => d.Name.Equals(directorName, StringComparison.OrdinalIgnoreCase));
+            Console.WriteLine("\nCinema Functions Menu");
+            Console.WriteLine("1. Create function");
+            Console.WriteLine("2. Modify function");
+            Console.WriteLine("3. Delete function");
+            Console.WriteLine("4. List functions");
+            Console.WriteLine("5. Exit");
+            Console.Write("Select an option: ");
 
-            if (movie == null || director == null)
+            var option = Console.ReadLine();
+            switch (option)
             {
-                Console.WriteLine("Movie or director not found.");
-                return false;
-            }
-            if (!_movies.Any(m => m.Name.Equals(movieName, StringComparison.OrdinalIgnoreCase)) ||
-                !_directors.Any(d => d.Name.Equals(directorName, StringComparison.OrdinalIgnoreCase)))
-            {
-                Console.WriteLine("Movie or director not found.");
-                return false;
-            }
-            if (!string.Equals(movie.Director.Name, directorName, StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("The entered director did not direct the selected movie.");
-                return false;
-            }
-
-            int directorFunctionsCount = _functions.Count(f => f.DirectorName == directorName && f.Date == date);
-            if (directorFunctionsCount >= 10)
-            {
-                Console.WriteLine("The director has reached the maximum number of functions allowed for the day.");
-                return false;
+                case "1": CreateFunction(); break;
+                case "2": ModifyFunction(); break;
+                case "3": DeleteFunction(); break;
+                case "4": ListFunctions(); break;
+                case "5": return;
+                default: Console.WriteLine("Invalid option. Try again."); break;
             }
 
-            int movieFunctionsCount = _functions.Count(f => f.MovieName == movieName);
-            if (movie.Country != CountryCode.Argentina && movieFunctionsCount >= 8)
-            {
-                Console.WriteLine("The international movie has reached its function limit.");
-                return false;
-            }
-
-            var newFunction = new FunctionDto
-            {
-                Id = _nextFunctionId++,
-                MovieName = movieName,
-                DirectorName = directorName,
-                Date = date,
-                Time = time,
-                Price = price
-            };
-            _functions.Add(newFunction);
-            SaveFunctions();
-            return true;
+            if (option != "5") ShowMenu();
         }
 
-        public bool UpdateFunction(FunctionDto function)
+        private void CreateFunction()
         {
-            var existingFunction = _functions.FirstOrDefault(f => f.Id == function.Id);
-            if (existingFunction == null)
-            {
-                return false;
-            }
+            var movieName = Prompt("Enter the movie name: ");
+            var directorName = Prompt("Enter the director's name: ");
+            DateTime date = GetValidDate("Enter the date (YYYY-MM-DD): ");
+            TimeSpan time = GetValidTime(date);
+            decimal price = GetValidPrice();
 
-            var movie = _movies.FirstOrDefault(m => m.Name.Equals(function.MovieName, StringComparison.OrdinalIgnoreCase));
-            var director = _directors.FirstOrDefault(d => d.Name.Equals(function.DirectorName, StringComparison.OrdinalIgnoreCase));
-
-            if (movie == null || director == null)
-            {
-                Console.WriteLine("Movie or director not found.");
-                return false;
-            }
-            if (!_movies.Any(m => m.Name.Equals(function.MovieName, StringComparison.OrdinalIgnoreCase)) ||
-                !_directors.Any(d => d.Name.Equals(function.DirectorName, StringComparison.OrdinalIgnoreCase)))
-            {
-                Console.WriteLine("Movie or director not found.");
-                return false;
-            }
-            if (!string.Equals(movie.Director.Name, function.DirectorName, StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("The entered director did not direct the selected movie.");
-                return false;
-            }
-
-            existingFunction.MovieName = function.MovieName;
-            existingFunction.DirectorName = function.DirectorName;
-            existingFunction.Date = function.Date;
-            existingFunction.Time = function.Time;
-            existingFunction.Price = function.Price;
-
-            SaveFunctions();
-            return true;
+            var result = _functionsService.AddFunction(movieName, directorName, date, time, price);
+            Console.WriteLine(result ? "Function added successfully." : "Could not add function.");
         }
 
-        public bool DeleteFunction(int id)
+        private string Prompt(string message)
         {
-            var function = _functions.FirstOrDefault(f => f.Id == id);
+            Console.Write(message);
+            var response = Console.ReadLine();
+            return response!;
+        }
+
+        private DateTime GetValidDate(string prompt)
+        {
+            return ValidateInput(prompt,
+                input => DateTime.Parse(input),
+                date => date >= DateTime.Today,
+                "Invalid date. Must be today or later.");
+        }
+
+        private TimeSpan GetValidTime(DateTime date)
+        {
+            int hour = -1;
+            int minutes = -1;
+            TimeSpan time;
+            DateTime now = DateTime.Now;
+
+            Console.Write("Enter the hour (0-23): ");
+            if (!int.TryParse(Console.ReadLine(), out hour) || hour < 0 || hour > 23)
+            {
+                Console.Write("Invalid hour. Please enter a valid hour (0-23): ");
+                return GetValidTime(date);
+            }
+
+            Console.Write("Enter the minutes (0-59): ");
+            if (!int.TryParse(Console.ReadLine(), out minutes) || minutes < 0 || minutes > 59)
+            {
+                Console.Write("Invalid minutes. Please enter valid minutes (0-59): ");
+                return GetValidTime(date);
+            }
+
+            time = new TimeSpan(hour, minutes, 0);
+
+            if (date == DateTime.Today && time <= now.TimeOfDay)
+            {
+                Console.Write("Invalid time. Please enter a future time: ");
+                return GetValidTime(date);
+            }
+
+            return time;
+        }
+
+        private decimal GetValidPrice()
+        {
+            return ValidateInput("Enter the price: ",
+                input => decimal.Parse(input),
+                price => price > 0,
+                "Invalid price. Must be greater than 0.");
+        }
+
+        private T ValidateInput<T>(string prompt, Func<string, T> converter, Func<T, bool> validator, string errorMessage)
+        {
+            Console.Write(prompt);
+            var input = Console.ReadLine();
+
+            try
+            {
+                T value = converter(input!);
+                if (validator(value)) return value;
+            }
+            catch { }
+
+            Console.WriteLine(errorMessage);
+            return ValidateInput(prompt, converter, validator, errorMessage);
+        }
+
+        private void ModifyFunction()
+        {
+            int id = GetValidId();
+            var function = _functionsService.GetFunctionById(id);
             if (function == null)
             {
-                return false;
+                Console.WriteLine("Function not found.");
+                return;
             }
-            _functions.Remove(function);
-            SaveFunctions();
-            return true;
+
+            Console.WriteLine($"Current details: Movie: {function.MovieName}, Director: {function.DirectorName}, Date: {function.Date:yyyy-MM-dd}, Time: {function.Time}, Price: {function.Price}");
+            function.MovieName = Prompt($"Enter the new movie name (current: {function.MovieName}): ");
+            function.DirectorName = Prompt($"Enter the new director name (current: {function.DirectorName}): ");
+            function.Date = GetValidDateUpdate(function.Date);
+            function.Time = GetValidTimeUpdate(function.Date, function.Time);
+            function.Price = GetValidPriceUpdate(function.Price);
+
+            var result = _functionsService.UpdateFunction(function);
+            Console.WriteLine(result ? "Function modified successfully." : "Failed to modify function.");
         }
 
-        public List<FunctionDto> GetFunctions()
+        private int GetValidId()
         {
-            return LoadFunctions();
+            return ValidateInput("Enter the function ID: ",
+                input => int.Parse(input),
+                id => id >= 0,
+                "Invalid ID. Must be a non-negative number.");
         }
 
-        public FunctionDto? GetFunctionById(int id)
+        private DateTime GetValidDateUpdate(DateTime currentDate)
         {
-            return _functions.FirstOrDefault(f => f.Id == id);
+            var newDateInput = Prompt($"Enter the new date (current: {currentDate:yyyy-MM-dd}): ");
+            if (string.IsNullOrEmpty(newDateInput)) return currentDate;
+            return GetValidDate("Enter the new date (YYYY-MM-DD): ");
         }
 
-        private void SaveFunctions()
+        private TimeSpan GetValidTimeUpdate(DateTime date, TimeSpan currentTime)
         {
-            using (StreamWriter writer = new StreamWriter(FunctionsFilePath))
+            var timeInput = Prompt($"Enter the new time (current: {currentTime}): ");
+            return string.IsNullOrEmpty(timeInput) ? currentTime : GetValidTime(date);
+        }
+
+        private decimal GetValidPriceUpdate(decimal currentPrice)
+        {
+            var priceInput = Prompt($"Enter the new price (current: {currentPrice}): ");
+            return string.IsNullOrEmpty(priceInput) ? currentPrice : decimal.Parse(priceInput);
+        }
+
+        private void DeleteFunction()
+        {
+            var functions = _functionsService.GetFunctions();
+            if (functions == null || functions.Count == 0)
             {
-                foreach (var function in _functions)
-                {
-                    writer.WriteLine($"{function.Id},{function.MovieName},{function.DirectorName},{function.Date:yyyy-MM-dd},{function.Time},{function.Price}");
-                }
+                Console.WriteLine("No functions available to delete.");
+                return;
             }
+
+            foreach (var function in functions)
+            {
+                Console.WriteLine($"ID: {function.Id}, Movie: {function.MovieName}, Director: {function.DirectorName}, Date: {function.Date:yyyy-MM-dd}, Time: {function.Time}, Price: {function.Price}");
+            }
+
+            int id = GetValidId();
+            var result = _functionsService.DeleteFunction(id);
+            Console.WriteLine(result ? "Function deleted." : "Function not found.");
         }
 
-        private List<FunctionDto> LoadFunctions()
+        private void ListFunctions()
         {
-            var functions = new List<FunctionDto>();
-            if (File.Exists(FunctionsFilePath))
+            var functions = _functionsService.GetFunctions();
+            if (functions.Count == 0)
             {
-                foreach (var line in File.ReadAllLines(FunctionsFilePath))
-                {
-                    var data = line.Split(',');
-                    if (data.Length == 6 &&
-                        int.TryParse(data[0], out int id) &&
-                        DateTime.TryParse(data[3], out DateTime date) &&
-                        TimeSpan.TryParse(data[4], out TimeSpan time) &&
-                        decimal.TryParse(data[5], out decimal price))
-                    {
-                        functions.Add(new FunctionDto
-                        {
-                            Id = id,
-                            MovieName = data[1],
-                            DirectorName = data[2],
-                            Date = date,
-                            Time = time,
-                            Price = price
-                        });
-                    }
-                }
+                Console.WriteLine("No registered functions.");
+                return;
             }
-            return functions;
+
+            foreach (var function in functions)
+            {
+                Console.WriteLine($"ID: {function.Id}, Movie: {function.MovieName}, Director: {function.DirectorName}, Date: {function.Date:yyyy-MM-dd}, Time: {function.Time}, Price: {function.Price}");
+            }
         }
     }
 }
