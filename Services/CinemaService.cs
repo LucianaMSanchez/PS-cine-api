@@ -130,7 +130,6 @@ namespace cine_api.Services
             return _functions.FirstOrDefault(f => f.Id == id);
         }
 
-
         private void SaveFunctions()
         {
             using (StreamWriter writer = new StreamWriter(FunctionsFilePath))

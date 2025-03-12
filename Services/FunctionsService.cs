@@ -41,7 +41,7 @@ namespace cine_api.Services
             TimeSpan time = GetValidTime(date);
             decimal price = GetValidPrice();
 
-            var result = _cinemaService.AddFunction(movieName!, directorName!, date, time, price);
+            var result = _cinemaService.AddFunction(movieName, directorName, date, time, price);
             Console.WriteLine(result ? "Function added successfully." : "Could not add function.");
         }
 
@@ -100,14 +100,6 @@ namespace cine_api.Services
                 "Invalid price. Must be greater than 0.");
         }
 
-        private int GetValidId()
-        {
-            return ValidateInput("Enter the function ID: ",
-                input => int.Parse(input),
-                id => id >= 0,
-                "Invalid ID. Must be a non-negative number.");
-        }
-
         private T ValidateInput<T>(string prompt, Func<string, T> converter, Func<T, bool> validator, string errorMessage)
         {
             Console.Write(prompt);
@@ -121,7 +113,7 @@ namespace cine_api.Services
             catch { }
 
             Console.WriteLine(errorMessage);
-            return ValidateInput(prompt, converter, validator, errorMessage); // Recursión en caso de error
+            return ValidateInput(prompt, converter, validator, errorMessage);
         }
 
         private void ModifyFunction()
@@ -143,6 +135,14 @@ namespace cine_api.Services
 
             var result = _cinemaService.UpdateFunction(function);
             Console.WriteLine(result ? "Function modified successfully." : "Failed to modify function.");
+        }
+
+        private int GetValidId()
+        {
+            return ValidateInput("Enter the function ID: ",
+                input => int.Parse(input),
+                id => id >= 0,
+                "Invalid ID. Must be a non-negative number.");
         }
 
         private DateTime GetValidDateUpdate(DateTime currentDate)
