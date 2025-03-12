@@ -122,7 +122,7 @@ namespace cine_api.Services
 
         public List<FunctionDto> GetFunctions()
         {
-            return _functions;
+            return LoadFunctions();
         }
 
         public FunctionDto? GetFunctionById(int id)
